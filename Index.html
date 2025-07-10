@@ -93,7 +93,7 @@ function App() {
   const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userDisplayName, setUserDisplayName] = useState('');
-  const [userPhotoURL, setUserPhotoURL] = useState(''); // NEW: State for user's profile picture
+  const [userPhotoURL, setUserPhotoURL] = useState('');
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [equipmentList, setEquipmentList] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
@@ -105,8 +105,10 @@ function App() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(true);
   
+  // State for Admin functionality
+  const [isAdmin, setIsAdmin] = useState(true); // Assume admin for demo purposes
+  const [showAdminPanel, setShowAdminPanel] = useState(false); // NEW: Admin panel visibility state
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
   const [showEditEquipmentModal, setShowEditEquipmentModal] = useState(false);
   const [showDeleteEquipmentModal, setShowDeleteEquipmentModal] = useState(false);
@@ -114,12 +116,12 @@ function App() {
   const [equipmentToDelete, setEquipmentToDelete] = useState(null);
   const [equipmentForm, setEquipmentForm] = useState({ name: '', description: '' });
 
-  // NEW: Ref and state for the user dropdown menu
   const userMenuRef = useRef(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   
   const appId = firebaseConfig.appId;
 
+  // --- Effects ---
   useEffect(() => {
     const app = initializeApp(firebaseConfig);
     const firestore = getFirestore(app);
@@ -129,13 +131,30 @@ function App() {
     const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       setUserId(user ? user.uid : null);
       setUserDisplayName(user ? user.displayName || 'User' : '');
-      setUserPhotoURL(user ? user.photoURL : ''); // NEW: Set user photo URL
+      setUserPhotoURL(user ? user.photoURL : '');
       setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
 
-  // NEW: Effect to close user menu when clicking outside
+  // NEW: Effect to listen for the admin panel shortcut
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifierKey = isMac ? event.metaKey : event.ctrlKey;
+      
+      if (modifierKey && event.shiftKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault();
+        // Only allow toggling if the user is considered an admin
+        if (isAdmin) {
+          setShowAdminPanel(prev => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAdmin]); // Depend on isAdmin state
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -165,7 +184,7 @@ function App() {
     return () => unsub();
   }, [db, userId, appId]);
 
-  // --- Functions (no changes to logic, just formatting) ---
+  // --- Functions ---
   const handleBookingFormChange = (e) => setBookingForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const openBookingModal = (equipment) => {
     setSelectedEquipment(equipment);
@@ -199,6 +218,7 @@ function App() {
     const bookingData = { equipmentId: selectedEquipment.id, equipmentName: selectedEquipment.name, userId, userDisplayName, startDate: Timestamp.fromDate(startDateTime), endDate: Timestamp.fromDate(endDateTime), status: 'booked', bookedAt: Timestamp.now() };
     await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bookings`), bookingData);
     await addDoc(collection(db, `artifacts/${appId}/public/data/bookings`), bookingData);
+    // TODO: This is where you would trigger a Cloud Function for email notifications.
     closeBookingModal();
   };
 
@@ -260,20 +280,19 @@ function App() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
-      {/* --- MODIFIED HEADER --- */}
-      <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">SEG CMF Lab Equipment Management Platform</h1>
+    <div className="w-full max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+      <header className="flex justify-between items-center mb-10 pb-6 border-b border-gray-200">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">SEG CMF Lab Equipment Management Platform</h1>
         <div ref={userMenuRef} className="relative">
             {userId ? (
                 <div>
-                    <button onClick={() => setShowUserMenu(prev => !prev)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition">
+                    <button onClick={() => setShowUserMenu(prev => !prev)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <img src={userPhotoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'} alt="User Profile" className="w-full h-full object-cover" />
                     </button>
                     {showUserMenu && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
                             <div className="px-4 py-3">
-                                <p className="text-sm">Signed in as</p>
+                                <p className="text-sm text-gray-500">Signed in as</p>
                                 <p className="text-sm font-medium text-gray-900 truncate">{userDisplayName}</p>
                             </div>
                             <div className="border-t border-gray-100"></div>
@@ -289,10 +308,11 @@ function App() {
         </div>
       </header>
       <main>
-        {isAdmin && (
+        {/* MODIFIED: Admin sections are now conditionally rendered based on showAdminPanel state */}
+        {isAdmin && showAdminPanel && (
           <>
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Equipment Schedule</h2>
+            <section className="mb-16">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Equipment Dashboard</h2>
               <div className="p-4 bg-gray-50 rounded-lg shadow-inner">
                 <CalendarComponent
                   events={allPublicBookings
@@ -307,7 +327,7 @@ function App() {
               </div>
             </section>
             
-            <section className="mb-12">
+            <section className="mb-16">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">Manage Equipment</h2>
                     <button onClick={openAddEquipmentModal} className="text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Add Equipment</button>
@@ -338,9 +358,9 @@ function App() {
             </section>
           </>
         )}
-        <section className="mb-12">
+        <section className="mb-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Equipment</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {equipmentList.map(equipment => (
               <div key={equipment.id} className="bg-white border border-gray-200 rounded-lg p-6 flex flex-col">
                 <h3 className="text-lg font-semibold text-indigo-700">{equipment.name}</h3>
