@@ -103,7 +103,7 @@ function App() {
   const [allPublicBookings, setAllPublicBookings] = useState([]);
   
   const [selectedEquipment, setSelectedEquipment] = useState(null);
-  const [bookingForm, setBookingForm] = useState({ startDate: '', startTime: '', endDate: '', endTime: '' });
+  const [bookingForm, setBookingForm] = useState({ startDate: '', startTime: '08:00', endDate: '', endTime: '08:30' });
   const [message, setMessage] = useState('');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -188,12 +188,8 @@ function App() {
   const handleBookingFormChange = (e) => setBookingForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const openBookingModal = (equipment) => {
     setSelectedEquipment(equipment);
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    let h = now.getHours(), m = Math.ceil(now.getMinutes() / 15) * 15;
-    if (m === 60) { h = (h + 1) % 24; m = 0; }
-    const defaultTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-    setBookingForm({ startDate: today, startTime: defaultTime, endDate: today, endTime: defaultTime });
+    const today = new Date().toISOString().split('T')[0];
+    setBookingForm({ startDate: today, startTime: '08:00', endDate: today, endTime: '08:30' });
     setShowBookingModal(true);
   };
   const closeBookingModal = () => { setShowBookingModal(false); setMessage(''); };
@@ -206,14 +202,17 @@ function App() {
     const { startDate, startTime, endDate, endTime } = bookingForm;
     const startDateTime = new Date(`${startDate}T${startTime}`);
     const endDateTime = new Date(`${endDate}T${endTime}`);
-    if (startDateTime >= endDateTime || startDateTime < new Date()) {
-      setMessage("Invalid date or time selection."); return;
+    if (startDateTime >= endDateTime) {
+      setMessage("End time must be after start time."); return;
+    }
+    if (startDateTime < new Date()) {
+      setMessage("Booking start time cannot be in the past."); return;
     }
     const q = query(collection(db, `artifacts/${appId}/public/data/bookings`), where('equipmentId', '==', selectedEquipment.id), where('status', '==', 'booked'));
     const snapshot = await getDocs(q);
     const isBooked = snapshot.docs.some(d => startDateTime < d.data().endDate.toDate() && endDateTime > d.data().startDate.toDate());
     if (isBooked) {
-      setMessage("This equipment is already booked for this time slot."); return;
+      setMessage("This equipment is already booked for the selected time slot."); return;
     }
     const bookingData = { equipmentId: selectedEquipment.id, equipmentName: selectedEquipment.name, userId, userDisplayName, startDate: Timestamp.fromDate(startDateTime), endDate: Timestamp.fromDate(endDateTime), status: 'booked', bookedAt: Timestamp.now() };
     await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bookings`), bookingData);
@@ -275,16 +274,22 @@ function App() {
   
   const formatDateTime = (ts) => {
     if (!ts) return 'N/A';
-    const options = {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC'
-    };
+    const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' };
     return ts.toDate().toLocaleString('en-US', options);
   };
+
+  // NEW: Helper function to generate time slots for the dropdowns
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 8; hour <= 17; hour++) {
+      slots.push(`${String(hour).padStart(2, '0')}:00`);
+      if (hour < 17) {
+        slots.push(`${String(hour).padStart(2, '0')}:30`);
+      }
+    }
+    return slots;
+  };
+  const timeSlots = generateTimeSlots();
 
   if (!isAuthReady) {
     return <div className="min-h-screen flex items-center justify-center"><p>Loading Platform...</p></div>;
@@ -418,39 +423,23 @@ function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-semibold text-gray-700 mb-1">Start Date</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <input type="date" id="startDate" name="startDate" value={bookingForm.startDate} onChange={handleBookingFormChange} className="w-full pl-10 pr-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
-                  </div>
+                  <input type="date" id="startDate" name="startDate" value={bookingForm.startDate} onChange={handleBookingFormChange} className="w-full px-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
                 </div>
                 <div>
                   <label htmlFor="startTime" className="block text-sm font-semibold text-gray-700 mb-1">Start Time</label>
-                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                       <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <input type="time" id="startTime" name="startTime" value={bookingForm.startTime} onChange={handleBookingFormChange} className="w-full pl-10 pr-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
-                  </div>
+                  <select id="startTime" name="startTime" value={bookingForm.startTime} onChange={handleBookingFormChange} className="w-full px-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    {timeSlots.map(time => <option key={time} value={time}>{time}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="endDate" className="block text-sm font-semibold text-gray-700 mb-1">End Date</label>
-                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                       <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <input type="date" id="endDate" name="endDate" value={bookingForm.endDate} onChange={handleBookingFormChange} className="w-full pl-10 pr-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
-                  </div>
+                  <input type="date" id="endDate" name="endDate" value={bookingForm.endDate} onChange={handleBookingFormChange} className="w-full px-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
                 </div>
                 <div>
                   <label htmlFor="endTime" className="block text-sm font-semibold text-gray-700 mb-1">End Time</label>
-                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <input type="time" id="endTime" name="endTime" value={bookingForm.endTime} onChange={handleBookingFormChange} className="w-full pl-10 pr-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
-                  </div>
+                  <select id="endTime" name="endTime" value={bookingForm.endTime} onChange={handleBookingFormChange} className="w-full px-3 py-2 bg-gray-100 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                     {timeSlots.map(time => <option key={time} value={time}>{time}</option>)}
+                  </select>
                 </div>
               </div>
               {message && (<div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm">{message}</div>)}
