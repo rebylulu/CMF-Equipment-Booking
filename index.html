@@ -108,7 +108,7 @@ function App() {
   
   // State for Admin functionality
   const [isAdmin, setIsAdmin] = useState(true); // Assume admin for demo purposes
-  const [showAdminPanel, setShowAdminPanel] = useState(false); // NEW: Admin panel visibility state
+  const [showAdminPanel, setShowAdminPanel] = useState(false); // Admin panel visibility state
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
   const [showEditEquipmentModal, setShowEditEquipmentModal] = useState(false);
   const [showDeleteEquipmentModal, setShowDeleteEquipmentModal] = useState(false);
@@ -137,7 +137,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // NEW: Effect to listen for the admin panel shortcut
+  // Effect to listen for the admin panel shortcut
   useEffect(() => {
     const handleKeyDown = (event) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -308,9 +308,8 @@ function App() {
         </div>
       </header>
       <main>
-        {/* MODIFIED: Admin sections are now conditionally rendered based on showAdminPanel state */}
-        {isAdmin && showAdminPanel && (
-          <>
+        {/* MODIFIED: Admin sections are now separated */}
+        {isAdmin && (
             <section className="mb-16">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Equipment Dashboard</h2>
               <div className="p-4 bg-gray-50 rounded-lg shadow-inner">
@@ -326,7 +325,9 @@ function App() {
                 />
               </div>
             </section>
-            
+        )}
+        
+        {isAdmin && showAdminPanel && (
             <section className="mb-16">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">Manage Equipment</h2>
@@ -356,7 +357,6 @@ function App() {
                     </table>
                 </div>
             </section>
-          </>
         )}
         <section className="mb-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Equipment</h2>
