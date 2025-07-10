@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipment Booking Platform</title>
+    <title>SEG CMF Lab Equipment Management Platform</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -48,6 +48,17 @@ import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc
 // --- React Component Definition ---
 const { useState, useEffect, useRef } = React;
 
+// Your Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBC6Jt_MDS4b9RbHO3giUox2uIGdI8cqbs",
+  authDomain: "bookingplatform-8ca05.firebaseapp.com",
+  projectId: "bookingplatform-8ca05",
+  storageBucket: "bookingplatform-8ca05.firebasestorage.app",
+  messagingSenderId: "216704990467",
+  appId: "1:216704990467:web:070dd86312ef2f365d3d36",
+  measurementId: "G-2TN5MYDXLW"
+};
+
 // Custom Calendar Component that uses the global FullCalendar object
 function CalendarComponent({ events }) {
     const calendarRef = useRef(null);
@@ -82,6 +93,7 @@ function App() {
   const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userDisplayName, setUserDisplayName] = useState('');
+  const [userPhotoURL, setUserPhotoURL] = useState(''); // NEW: State for user's profile picture
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [equipmentList, setEquipmentList] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
@@ -95,13 +107,16 @@ function App() {
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [isAdmin, setIsAdmin] = useState(true);
   
-  // State for Admin CRUD operations
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
   const [showEditEquipmentModal, setShowEditEquipmentModal] = useState(false);
   const [showDeleteEquipmentModal, setShowDeleteEquipmentModal] = useState(false);
   const [equipmentToEdit, setEquipmentToEdit] = useState(null);
   const [equipmentToDelete, setEquipmentToDelete] = useState(null);
   const [equipmentForm, setEquipmentForm] = useState({ name: '', description: '' });
+
+  // NEW: Ref and state for the user dropdown menu
+  const userMenuRef = useRef(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
   const appId = firebaseConfig.appId;
 
@@ -114,9 +129,21 @@ function App() {
     const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       setUserId(user ? user.uid : null);
       setUserDisplayName(user ? user.displayName || 'User' : '');
+      setUserPhotoURL(user ? user.photoURL : ''); // NEW: Set user photo URL
       setIsAuthReady(true);
     });
     return () => unsubscribe();
+  }, []);
+
+  // NEW: Effect to close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -138,7 +165,7 @@ function App() {
     return () => unsub();
   }, [db, userId, appId]);
 
-  // --- Booking Functions ---
+  // --- Functions (no changes to logic, just formatting) ---
   const handleBookingFormChange = (e) => setBookingForm(p => ({ ...p, [e.target.name]: e.target.value }));
   const openBookingModal = (equipment) => {
     setSelectedEquipment(equipment);
@@ -184,14 +211,8 @@ function App() {
     closeCancelModal();
   };
 
-  // --- Admin Equipment CRUD Functions ---
   const handleEquipmentFormChange = (e) => setEquipmentForm(p => ({ ...p, [e.target.name]: e.target.value }));
-  
-  const openAddEquipmentModal = () => {
-    setEquipmentForm({ name: '', description: '' });
-    setShowAddEquipmentModal(true);
-  }
-
+  const openAddEquipmentModal = () => { setEquipmentForm({ name: '', description: '' }); setShowAddEquipmentModal(true); }
   const addEquipment = async (e) => {
     e.preventDefault();
     if (!db || !isAdmin || !equipmentForm.name || !equipmentForm.description) {
@@ -205,19 +226,8 @@ function App() {
       setMessage(`Failed to add equipment. Error: ${error.message}`);
     }
   };
-
-  const openEditEquipmentModal = (equipment) => {
-    setEquipmentToEdit(equipment);
-    setEquipmentForm({ name: equipment.name, description: equipment.description });
-    setShowEditEquipmentModal(true);
-  };
-  
-  const closeEditEquipmentModal = () => {
-    setShowEditEquipmentModal(false);
-    setEquipmentToEdit(null);
-    setMessage('');
-  };
-
+  const openEditEquipmentModal = (equipment) => { setEquipmentToEdit(equipment); setEquipmentForm({ name: equipment.name, description: equipment.description }); setShowEditEquipmentModal(true); };
+  const closeEditEquipmentModal = () => { setShowEditEquipmentModal(false); setEquipmentToEdit(null); setMessage(''); };
   const updateEquipment = async (e) => {
     e.preventDefault();
     if (!db || !isAdmin || !equipmentToEdit) return;
@@ -229,18 +239,8 @@ function App() {
        setMessage(`Failed to update equipment. Error: ${error.message}`);
     }
   };
-
-  const openDeleteEquipmentModal = (equipment) => {
-    setEquipmentToDelete(equipment);
-    setShowDeleteEquipmentModal(true);
-  };
-
-  const closeDeleteEquipmentModal = () => {
-    setShowDeleteEquipmentModal(false);
-    setEquipmentToDelete(null);
-    setMessage('');
-  };
-
+  const openDeleteEquipmentModal = (equipment) => { setEquipmentToDelete(equipment); setShowDeleteEquipmentModal(true); };
+  const closeDeleteEquipmentModal = () => { setShowDeleteEquipmentModal(false); setEquipmentToDelete(null); setMessage(''); };
   const deleteEquipment = async () => {
     if (!db || !isAdmin || !equipmentToDelete) return;
     try {
@@ -251,7 +251,6 @@ function App() {
     }
   };
 
-  // --- Auth Functions ---
   const signInWithGoogle = async () => { if (!auth) return; await signInWithPopup(auth, new GoogleAuthProvider()); };
   const handleSignOut = async () => { if (!auth) return; await signOut(auth); };
   const formatDateTime = (ts) => ts ? ts.toDate().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'N/A';
@@ -262,13 +261,32 @@ function App() {
 
   return (
     <div className="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
+      {/* --- MODIFIED HEADER --- */}
       <header className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-800">CMF Lab Platform</h1>
-        {userId ? (
-          <button onClick={handleSignOut} className="text-sm font-medium text-red-600 hover:text-red-800">Sign Out</button>
-        ) : (
-          <button onClick={signInWithGoogle} className="text-sm font-semibold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Sign In</button>
-        )}
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">SEG CMF Lab Equipment Management Platform</h1>
+        <div ref={userMenuRef} className="relative">
+            {userId ? (
+                <div>
+                    <button onClick={() => setShowUserMenu(prev => !prev)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition">
+                        <img src={userPhotoURL || 'https://placehold.co/40x40/E2E8F0/4A5568?text=User'} alt="User Profile" className="w-full h-full object-cover" />
+                    </button>
+                    {showUserMenu && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
+                            <div className="px-4 py-3">
+                                <p className="text-sm">Signed in as</p>
+                                <p className="text-sm font-medium text-gray-900 truncate">{userDisplayName}</p>
+                            </div>
+                            <div className="border-t border-gray-100"></div>
+                            <button onClick={handleSignOut} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                Sign Out
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <button onClick={signInWithGoogle} className="text-sm font-semibold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Sign In</button>
+            )}
+        </div>
       </header>
       <main>
         {isAdmin && (
