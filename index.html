@@ -48,17 +48,6 @@ import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc
 // --- React Component Definition ---
 const { useState, useEffect, useRef } = React;
 
-// Your Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBC6Jt_MDS4b9RbHO3giUox2uIGdI8cqbs",
-  authDomain: "bookingplatform-8ca05.firebaseapp.com",
-  projectId: "bookingplatform-8ca05",
-  storageBucket: "bookingplatform-8ca05.firebasestorage.app",
-  messagingSenderId: "216704990467",
-  appId: "1:216704990467:web:070dd86312ef2f365d3d36",
-  measurementId: "G-2TN5MYDXLW"
-};
-
 // Custom Calendar Component that uses the global FullCalendar object
 function CalendarComponent({ events }) {
     const calendarRef = useRef(null);
