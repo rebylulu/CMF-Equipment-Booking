@@ -67,7 +67,7 @@ function CalendarComponent({ events }) {
         if (calendarRef.current && window.FullCalendar) {
             const calendar = new window.FullCalendar.Calendar(calendarRef.current, {
                 initialView: 'dayGridMonth',
-                timeZone: 'UTC', 
+                // FIX: Removed explicit timeZone to default to the user's browser time zone
                 height: 'auto',
                 headerToolbar: {
                     left: 'prev,next today',
@@ -205,14 +205,15 @@ function App() {
     if (startDateTime >= endDateTime) {
       setMessage("End time must be after start time."); return;
     }
-    if (startDateTime < new Date()) {
-      setMessage("Booking start time cannot be in the past."); return;
+    if (new Date(`${startDate}T${startTime}:00.000Z`) < new Date()) {
+        setMessage("Booking start time cannot be in the past.");
+        return;
     }
     const q = query(collection(db, `artifacts/${appId}/public/data/bookings`), where('equipmentId', '==', selectedEquipment.id), where('status', '==', 'booked'));
     const snapshot = await getDocs(q);
     const isBooked = snapshot.docs.some(d => startDateTime < d.data().endDate.toDate() && endDateTime > d.data().startDate.toDate());
     if (isBooked) {
-      setMessage("This equipment is already booked for the selected time slot."); return;
+      setMessage("This equipment is already booked for this time slot."); return;
     }
     const bookingData = { equipmentId: selectedEquipment.id, equipmentName: selectedEquipment.name, userId, userDisplayName, startDate: Timestamp.fromDate(startDateTime), endDate: Timestamp.fromDate(endDateTime), status: 'booked', bookedAt: Timestamp.now() };
     await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bookings`), bookingData);
@@ -272,13 +273,13 @@ function App() {
   const signInWithGoogle = async () => { if (!auth) return; await signInWithPopup(auth, new GoogleAuthProvider()); };
   const handleSignOut = async () => { if (!auth) return; await signOut(auth); };
   
+  // FIX: Date formatting function now uses the browser's local time zone by default.
   const formatDateTime = (ts) => {
     if (!ts) return 'N/A';
-    const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' };
+    const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
     return ts.toDate().toLocaleString('en-US', options);
   };
 
-  // NEW: Helper function to generate time slots for the dropdowns
   const generateTimeSlots = () => {
     const slots = [];
     for (let hour = 8; hour <= 17; hour++) {
@@ -414,7 +415,7 @@ function App() {
         </section>
       </main>
 
-      {/* --- MODIFIED BOOKING MODAL --- */}
+      {/* --- Modals --- */}
       {showBookingModal && selectedEquipment && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-8">
