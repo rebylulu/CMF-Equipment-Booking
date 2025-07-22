@@ -1,7 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  // https://github.com/rebylulu/CMF-Equipment-Booking.git
+  base: '/booking-platform-vite/',
+  build: {
+    outDir: 'dist',
+  },
+});
