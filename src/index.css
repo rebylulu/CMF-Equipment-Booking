@@ -14,7 +14,24 @@
 .fc .fc-button-primary { background-color: #4f46e5; border-color: #4f46e5; color: #ffffff; }
 .fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: #4338ca; border-color: #4338ca; }
 
-/* You can also add Tailwind CSS directives here for a proper setup: */
-/* @tailwind base; */
-/* @tailwind components; */
-/* @tailwind utilities; */
+/* src/index.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles from your HTML, 放在 @tailwind 指令之后 */
+:root {
+    --fc-border-color: #e5e7eb;
+    --fc-daygrid-event-dot-width: 8px;
+    --fc-list-event-dot-width: 10px;
+    --fc-event-bg-color: #4f46e5;
+    --fc-event-border-color: #4f46e5;
+    --fc-event-text-color: #ffffff;
+    --fc-page-bg-color: #f9fafb;
+}
+.fc a { color: inherit; text-decoration: none; }
+.fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 600; }
+.fc .fc-button { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; text-transform: capitalize; }
+.fc .fc-button-primary { background-color: #4f46e5; border-color: #4f46e5; color: #ffffff; }
+.fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: #4338ca; border-color: #4338ca; }
