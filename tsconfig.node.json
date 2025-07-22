@@ -1,24 +1,19 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2023",
-    "lib": ["ES2023"],
-    "module": "ESNext",
+    "composite": true, // <-- 确保这里是 true
     "skipLibCheck": true,
-
-    /* Bundler mode */
+    "target": "ES2023", // 使用与你项目中其他tsconfig.json一致的target
+    "lib": ["ES2023"],   // 确保lib与target兼容
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-
-    /* Linting */
+    "allowSyntheticDefaultImports": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    // "allowImportingTsExtensions": true, // <-- 彻底移除这一行，因为你没有noEmit
+    // "verbatimModuleSyntax": true,      // <-- 也可以考虑移除，因为它通常与allowImportingTsExtensions配套
+    // "moduleDetection": "force",        // <-- 也可以考虑移除
+    // "noEmit": true,                    // <-- 确认已经移除
+    "jsx": "react-jsx",
+    "types": ["node"]
   },
   "include": ["vite.config.ts"]
 }
