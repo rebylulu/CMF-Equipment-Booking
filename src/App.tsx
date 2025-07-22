@@ -1,24 +1,20 @@
-// --- Firebase Imports (from NPM packages) ---
+// src/App.tsx
+
+// --- Firebase Imports ---
 import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, where, getDocs, Timestamp } from "firebase/firestore";
 
-// --- Firebase Imports ---
-// 注意：在实际 Vite 项目中，这些 Firebase CDN 导入会被替换为 npm 包导入
-// 例如：import { initializeApp } from "firebase/app";
-// 但为了保持与你原始HTML的Firebase版本一致，我们暂时保留CDN链接。
-// 在执行 npm install firebase 后，你应该更新这些导入语句。
 // --- React Imports ---
 import React, { useState, useEffect, useRef } from 'react';
 
 // --- 类型定义 ---
-// 为你的数据结构添加类型定义，提升代码可读性和维护性
 interface Equipment {
   id: string;
   name: string;
   description: string;
-  createdAt?: Timestamp; // 可选
-  updatedAt?: Timestamp; // 可选
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 interface Booking {
@@ -31,13 +27,10 @@ interface Booking {
   endDate: Timestamp;
   status: 'booked' | 'cancelled';
   bookedAt: Timestamp;
-  cancelledAt?: Timestamp; // 可选
+  cancelledAt?: Timestamp;
 }
 
 // --- Firebase Configuration (using environment variables) ---
-// IMPORTANT: Replace these with your actual Firebase project's config.
-// These variables must be prefixed with VITE_ to be exposed by Vite.
-// You will define these in your .env file locally, and in GitHub Secrets for deployment.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
@@ -45,14 +38,13 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string, // 如果有的话
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string,
 };
 
 // Custom Calendar Component that uses the global FullCalendar object
-// 注意：在 TypeScript 中，我们需要确保 window.FullCalendar 是可用的
 declare global {
   interface Window {
-    FullCalendar: any; // FullCalendar 类型，更严谨的话可以引入 FullCalendar 的类型声明
+    FullCalendar: any;
   }
 }
 
@@ -80,7 +72,7 @@ function CalendarComponent({ events }: CalendarComponentProps) {
                 slotMinTime: '08:00:00',
                 slotMaxTime: '17:00:00',
                 events: events,
-                eventClick: (info: any) => { // info 的类型可以更具体
+                eventClick: (info: any) => {
                     const { title, start, end } = info.event;
                     alert(`Booking Details:\n- Event: ${title}\n- From: ${start.toLocaleString()}\n- To: ${end ? end.toLocaleString() : 'N/A'}`);
                 }
@@ -95,8 +87,8 @@ function CalendarComponent({ events }: CalendarComponentProps) {
 
 // Main App component
 export default function App() {
-  const [db, setDb] = useState<any>(null); // Firestore 实例
-  const [auth, setAuth] = useState<any>(null); // Auth 实例
+  const [db, setDb] = useState<any>(null);
+  const [auth, setAuth] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string>('');
   const [userPhotoURL, setUserPhotoURL] = useState<string>('');
@@ -112,8 +104,7 @@ export default function App() {
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   
-  // 保持 isAdmin 状态，假设你可以通过某种方式（如 Firebase Authentication 的 custom claims 或数据库查询）来确定管理员身份
-  const [isAdmin, setIsAdmin] = useState<boolean>(true); // 初始设为 true 便于开发测试
+  const [isAdmin, setIsAdmin] = useState<boolean>(true);
   const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false);
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState<boolean>(false);
   const [showEditEquipmentModal, setShowEditEquipmentModal] = useState<boolean>(false);
@@ -129,10 +120,9 @@ export default function App() {
 
   // --- Effects ---
   useEffect(() => {
-    // 检查 firebaseConfig 是否完整，避免在缺少配置时初始化 Firebase
     if (!firebaseConfig.apiKey) {
       console.error("Firebase configuration is incomplete. Please check your .env file or GitHub Secrets.");
-      setIsAuthReady(true); // 即使没有配置也标记为准备就绪，以避免无限加载状态
+      setIsAuthReady(true);
       return;
     }
 
@@ -144,7 +134,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
       setUserId(user ? user.uid : null);
       setUserDisplayName(user ? user.displayName || 'User' : '');
-      setUserPhotoURL(user ? user.photoURL || '' : ''); // 确保 photoURL 是 string 类型
+      setUserPhotoURL(user ? user.photoURL || '' : '');
       setIsAuthReady(true);
     });
     return () => unsubscribe();
@@ -177,7 +167,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!db || !appId) return; // 确保 db 和 appId 存在
+    if (!db || !appId) return;
     const unsubEquipment = onSnapshot(collection(db, `artifacts/${appId}/public/data/equipment`), (snapshot) => {
       setEquipmentList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Equipment, 'id'> })));
     });
@@ -188,7 +178,7 @@ export default function App() {
   }, [db, appId]);
 
   useEffect(() => {
-    if (!db || !userId || !appId) { setMyBookings([]); return; } // 确保 db, userId, appId 存在
+    if (!db || !userId || !appId) { setMyBookings([]); return; }
     const unsub = onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/bookings`), (snapshot) => {
       setMyBookings(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Booking, 'id'> })).sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis()));
     });
@@ -216,9 +206,7 @@ export default function App() {
     if (startDateTime >= endDateTime) {
       setMessage("End time must be after start time."); return;
     }
-    // 修正：现在时间在台湾，所以使用正确的时区判断
     const now = new Date();
-    // 考虑客户端时区和服务器时区的差异，这里简单判断日期+时间是否在过去
     if (startDateTime.getTime() < now.getTime()) {
         setMessage("Booking start time cannot be in the past.");
         return;
@@ -230,7 +218,7 @@ export default function App() {
     if (isBooked) {
       setMessage("This equipment is already booked for this time slot."); return;
     }
-    const bookingData: Omit<Booking, 'id'> = { // 使用 Omit 排除 id，因为 addDoc 会生成
+    const bookingData: Omit<Booking, 'id'> = {
       equipmentId: selectedEquipment.id,
       equipmentName: selectedEquipment.name,
       userId,
@@ -265,7 +253,7 @@ export default function App() {
       await addDoc(collection(db, `artifacts/${appId}/public/data/equipment`), { ...equipmentForm, createdAt: Timestamp.now() });
       setShowAddEquipmentModal(false);
       setMessage('');
-    } catch (error: any) { // error 类型可以更具体
+    } catch (error: any) {
       setMessage(`Failed to add equipment. Error: ${error.message}`);
     }
   };
@@ -476,9 +464,9 @@ export default function App() {
         </div>
       )}
       
-      {isAdmin && showAddEquipmentModal && (<div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h2 className="text-2xl font-bold mb-4 text-center">Add New Equipment</h2><form onSubmit={addEquipment}><div className="mb-4"><label htmlFor="newName" className="block font-semibold mb-2">Name</label><input type="text" id="newName" name="name" value={equipmentForm.name} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" required/></div><div className="mb-4"><label htmlFor="newDescription" className="block font-semibold mb-2">Description</label><textarea id="newDescription" name="description" value={equipmentForm.description} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" rows="3" required></textarea></div>{message && (<div className="bg-red-100 border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">{message}</div>)}<div className="flex justify-end space-x-3"><button type="button" onClick={() => { setShowAddEquipmentModal(false); setMessage(''); }} className="bg-gray-300 py-2 px-4 rounded-md font-semibold hover:bg-gray-400">Cancel</button><button type="submit" className="bg-purple-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-purple-700">Add Equipment</button></div></form></div></div>)}
+      {isAdmin && showAddEquipmentModal && (<div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h2 className="text-2xl font-bold mb-4 text-center">Add New Equipment</h2><form onSubmit={addEquipment}><div className="mb-4"><label htmlFor="newName" className="block font-semibold mb-2">Name</label><input type="text" id="newName" name="name" value={equipmentForm.name} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" required/></div><div className="mb-4"><label htmlFor="newDescription" className="block font-semibold mb-2">Description</label><textarea id="newDescription" name="description" value={equipmentForm.description} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" rows={3} required></textarea></div>{message && (<div className="bg-red-100 border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">{message}</div>)}<div className="flex justify-end space-x-3"><button type="button" onClick={() => { setShowAddEquipmentModal(false); setMessage(''); }} className="bg-gray-300 py-2 px-4 rounded-md font-semibold hover:bg-gray-400">Cancel</button><button type="submit" className="bg-purple-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-purple-700">Add Equipment</button></div></form></div></div>)}
       
-      {isAdmin && showEditEquipmentModal && (<div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h2 className="text-2xl font-bold mb-4 text-center">Edit Equipment</h2><form onSubmit={updateEquipment}><div className="mb-4"><label htmlFor="editName" className="block font-semibold mb-2">Name</label><input type="text" id="editName" name="name" value={equipmentForm.name} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" required/></div><div className="mb-4"><label htmlFor="editDescription" className="block font-semibold mb-2">Description</label><textarea id="editDescription" name="description" value={equipmentForm.description} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" rows="3" required></textarea></div>{message && (<div className="bg-red-100 border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">{message}</div>)}<div className="flex justify-end space-x-3"><button type="button" onClick={closeEditEquipmentModal} className="bg-gray-300 py-2 px-4 rounded-md font-semibold hover:bg-gray-400">Cancel</button><button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700">Save Changes</button></div></form></div></div>)}
+      {isAdmin && showEditEquipmentModal && (<div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"><h2 className="text-2xl font-bold mb-4 text-center">Edit Equipment</h2><form onSubmit={updateEquipment}><div className="mb-4"><label htmlFor="editName" className="block font-semibold mb-2">Name</label><input type="text" id="editName" name="name" value={equipmentForm.name} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" required/></div><div className="mb-4"><label htmlFor="editDescription" className="block font-semibold mb-2">Description</label><textarea id="editDescription" name="description" value={equipmentForm.description} onChange={handleEquipmentFormChange} className="w-full px-3 py-2 border rounded" rows={3} required></textarea></div>{message && (<div className="bg-red-100 border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">{message}</div>)}<div className="flex justify-end space-x-3"><button type="button" onClick={closeEditEquipmentModal} className="bg-gray-300 py-2 px-4 rounded-md font-semibold hover:bg-gray-400">Cancel</button><button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700">Save Changes</button></div></form></div></div>)}
 
       {isAdmin && showDeleteEquipmentModal && (<div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50"><div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6"><h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Confirm Deletion</h2><p className="text-gray-700 mb-6 text-center">Are you sure you want to delete <span className="font-semibold">"{equipmentToDelete?.name}"</span>? This cannot be undone.</p>{message && (<div className="bg-red-100 border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">{message}</div>)}<div className="flex justify-end space-x-3"><button type="button" onClick={closeDeleteEquipmentModal} className="bg-gray-300 text-gray-800 py-2 px-4 rounded-md font-semibold hover:bg-gray-400">Cancel</button><button type="button" onClick={deleteEquipment} className="bg-red-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-red-700">Delete Equipment</button></div></div></div>)}
 

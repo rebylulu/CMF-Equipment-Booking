@@ -1,24 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": false,
+    "composite": true,
     "skipLibCheck": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true, // <-- 添加或确保此项为 true
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "bundler", // <-- 重点：Vite 通常推荐 'bundler' 或 'node'
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx", // <-- 确保此项为 'react-jsx'
-    "paths": { // <-- 如果你之前有基于 CDN 的 Firebase 导入，请确保现在都已转换为 NPM 包导入，此项暂时可不必要
-        // "firebase/*": ["node_modules/firebase/*"]
-    }
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "types": ["node"]
   },
-  "include": ["src", "vite.config.ts"], // <-- 确保包含 'src' 和 'vite.config.ts'
-  "references": [{ "path": "./tsconfig.node.json" }] // 如果你有一个 tsconfig.node.json
+  "include": ["vite.config.ts"]
 }
