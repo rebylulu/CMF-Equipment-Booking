@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Trigger on push to main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+        env:
+          # Your Firebase Secrets
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+      - name: Upload artifact # 这一步是关键，它将构建产物上传为 Actions Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # 你的构建输出目录
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build # 确保在 build job 成功后才运行 deploy job
+    steps:
+      - name: Deploy to GitHub Pages # 这一步是从 Artifact 发布到 Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+    ```
+    * **关键改变：**
+        * 将 `build` 和 `deploy` 分成了两个 `job`。
+        * 在 `build` job 中，增加了 `actions/upload-pages-artifact@v3` 步骤，用于将 `dist` 文件夹作为部署 artifact 上传。
+        * `deploy` job 然后使用 `actions/deploy-pages@v4` 来部署这个 artifact。
+
+**请你再次检查你的 `.github/workflows/deploy.yml` 文件，确认你现在使用的是哪一个 Actions，并将其调整为上述 `actions/deploy-pages@v4` 的完整格式。** 然后再重新运行一次 Actions，并检查 GitHub Pages 的设置。
