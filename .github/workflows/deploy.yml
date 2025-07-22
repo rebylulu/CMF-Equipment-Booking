@@ -7,6 +7,12 @@ on:
     branches:
       - main # 当推送到 'main' 分支时触发此工作流
 
+# 在 jobs 级别添加 permissions 块
+permissions:
+  contents: read # 允许读取仓库内容
+  pages: write # 允许写入 GitHub Pages (用于部署)
+  id-token: write # <-- 新增：允许生成 OIDC 令牌 (用于 deploy-pages@v4)
+
 jobs:
   build: # 构建 Job
     runs-on: ubuntu-latest
@@ -17,37 +23,36 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # 确保使用你的项目支持的 Node.js 版本
-          cache: 'npm' # 缓存 node_modules 提升后续构建速度
+          node-version: '20' # 或者你当前正在尝试的 Node.js 版本
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build project # 构建 Vite 项目
+      - name: Build project
         run: npm run build
         env:
-          # 将 GitHub Secrets 的值作为环境变量传递给构建过程
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }} # 如果有的话
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
 
-      - name: Upload Pages artifact # 上传构建产物 (dist 文件夹)
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # 你的构建输出目录
+          path: './dist'
 
   deploy: # 部署 Job，依赖于 build Job
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build # 确保在 build job 成功后才运行 deploy job
+    needs: build
 
     steps:
-      - name: Deploy to GitHub Pages # 从上传的 artifact 发布到 Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
