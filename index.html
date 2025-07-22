@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEG CMF Lab Equipment Management Platform</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
+    <style>
+        /* Custom styles to ensure calendar looks good with Tailwind */
+        :root {
+            --fc-border-color: #e5e7eb;
+            --fc-daygrid-event-dot-width: 8px;
+            --fc-list-event-dot-width: 10px;
+            --fc-event-bg-color: #4f46e5;
+            --fc-event-border-color: #4f46e5;
+            --fc-event-text-color: #ffffff;
+            --fc-page-bg-color: #f9fafb;
+        }
+        .fc a { color: inherit; text-decoration: none; }
+        .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 600; }
+        .fc .fc-button { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: #374151; text-transform: capitalize; }
+        .fc .fc-button-primary { background-color: #4f46e5; border-color: #4f46e5; color: #ffffff; }
+        .fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active { background-color: #4338ca; border-color: #4338ca; }
+    </style>
+</head>
+<body class="bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
