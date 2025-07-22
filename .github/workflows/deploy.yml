@@ -17,7 +17,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # 确保使用你的项目支持的 Node.js 版本
+          node-version: '20' # 确保使用你的项目支持的 Node.js 版本
           cache: 'npm' # 缓存 node_modules 提升后续构建速度
 
       - name: Install dependencies
